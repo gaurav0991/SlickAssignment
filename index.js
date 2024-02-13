@@ -4,7 +4,7 @@ const redisClient = require('./redis-client'); // Adjust the path if necessary
 const app = express();
 const PORT = process.env.PORT || 3000;
 const { faker } = require('@faker-js/faker');
-
+const axios=require("axios")
 
 //caching implemented
 
@@ -58,6 +58,31 @@ app.get("/api/user",async (req,res)=>{
     data:rows
   })
 })
+const endpoints = [
+  "/api/potential-users",
+  "/api/loyalty-score?userId=037605ea-a7eb-4e29-bf66-c1c43215f19d",
+  "/api/top-users",
+  // Add more endpoints here if needed
+];
+
+app.get('/concurrent-api-calls', async (req, res) => {
+  try {
+    const responses = await Promise.all(
+      Array(10).fill().map(() =>
+        Promise.all(
+          endpoints.map(endpoint => axios.get(`http://localhost:3000${endpoint}`))
+        )
+      )
+    );
+
+    const responseData = responses.flat().map(response => response.data);
+    res.json(responseData);
+  } catch (error) {
+    console.error("Error making concurrent API calls:", error);
+    res.status(500).json({ error: "Failed to fetch data" });
+  }
+});
+
 
 
 app.get("/api/top-users",async(req,res)=>{
